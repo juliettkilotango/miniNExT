@@ -1,3 +1,3 @@
 """
-Quagga IXP Example for MiniNExT
+BIRD IXP Example for MiniNExT
 """
