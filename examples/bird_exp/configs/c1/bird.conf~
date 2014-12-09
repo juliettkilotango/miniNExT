@@ -1,0 +1,95 @@
+/*
+ *	This is an example configuration file.
+ */
+
+# Yes, even shell-like comments work...
+
+# Configure logging
+#log syslog { debug, trace, info, remote, warning, error, auth, fatal, bug };
+#log stderr all;
+#log "tmp" all;
+
+# Override router ID
+router id 172.0.3.2;
+
+# You can define your own symbols...
+#define xyzzy = (120+10);
+#define '1a-a1' = (30+40);
+
+# Define a route filter...
+#filter test_filter {
+#	if net ~ 10.0.0.0/16 then accept;
+#	else reject;
+#}
+
+#filter sink { reject; }
+#filter okay { accept; }
+
+#include "filters.conf";
+
+# Define another routing table
+#table testable;
+
+# Turn on global debugging of all protocols
+#debug protocols all;
+
+# The direct protocol automatically generates device routes to
+# all network interfaces. Can exist in as many instances as you wish
+# if you want to populate multiple routing tables with device routes.
+#protocol direct {
+#	interface "-eth*", "*";	# Restrict network interfaces it works with
+#}
+
+# This pseudo-protocol performs synchronization between BIRD's routing
+# tables and the kernel. If your kernel supports multiple routing tables
+# (as Linux 2.2.x does), you can run multiple instances of the kernel
+# protocol and synchronize different kernel tables with different BIRD tables.
+protocol kernel {
+		
+	persist;		# Don't remove routes on bird shutdown
+	scan time 20;		# Scan kernel routing table every 20 seconds
+	import all;		# Default is import all
+	export all;		# Default is export none
+		
+}
+
+# This pseudo-protocol watches all interface up/down events.
+protocol device {
+	scan time 10;		# Scan interfaces every 10 seconds
+}
+
+# Static routes (again, there can be multiple instances, so that you
+# can disable/enable various groups of static routes on the fly).
+protocol static {
+
+	route 10.1.3.0:255.255.255.0 via 172.0.3.2;
+
+}
+
+		
+
+protocol bgp {
+
+	description "AS 300_1";
+	local as 300;
+	neighbor 172.0.254.254 as 65000;
+	export all;
+	import all;
+	hold time 240;
+	startup hold time 240;
+	connect retry time 120;
+	keepalive time 80;	# defaults to hold time / 3
+	start delay time 5;	# How long do we wait before initial connect
+	error wait time 60, 300;# Minimum and maximum time we wait after an error (when consecutive
+#				# errors occur, we increase the delay exponentially ...
+	error forget time 300;	# ... until this timeout expires)
+	disable after error;	# Disable the protocol automatically when an error occurs
+	#next hop self;		# Disable next hop processing and always advertise our local address as nexthop
+	path metric 1;		# Prefer routes with shorter paths (like Cisco does)
+	default bgp_med 0;	# MED value we use for comparison when none is defined
+	default bgp_local_pref 0;	# The same for local preference
+	source address 172.0.3.2;	# What local address we use for the TCP connection
+
+}
+
+
